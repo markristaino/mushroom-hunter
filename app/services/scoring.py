@@ -61,7 +61,9 @@ class NowcastScorer:
         )
 
         # Host species presence
-        host_ok = any(host in cell.host_species_present for host in profile.host_species)
+        host_ok = any(
+            host.scientific_name in cell.host_species_present for host in profile.host_species
+        )
         components.append(
             ScoreComponent(
                 name="host_species",

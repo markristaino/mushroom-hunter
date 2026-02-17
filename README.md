@@ -28,6 +28,13 @@ app/
 - `species_profiles.json`: curated ecological parameters for each species.
 - `sample_cells.json`: demo environmental measurements for a few grid cells.
 
+### Species profile fields
+Each entry in `species_profiles.json` includes:
+- `soil_temperature_c`, `precipitation_mm_last_7d`, `soil_moisture_index`, `canopy_density_pct`, `elevation_m`: numeric ranges describing current-condition tolerances.
+- `host_species`: list of `{scientific_name, common_name?, notes?}` objects for editable host associations.
+- `soil_type_notes`, `fauna_partners`, `sources`, `last_updated`, `manual_notes`: narrative context for manual curation and traceability.
+After editing the JSON, restart the API (or clear the loader cache) so changes take effect.
+
 ## Getting Started
 1. **Install dependencies**
    ```bash
