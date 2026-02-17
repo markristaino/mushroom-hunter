@@ -1,0 +1,31 @@
+{
+  "cells": [
+    {
+      "cell_id": "wa-001",
+      "latitude": 47.2001,
+      "longitude": -121.8002,
+      "host_species_present": ["Pseudotsuga menziesii", "Tsuga heterophylla"],
+      "soil_temperature_c": 12.5,
+      "precipitation_mm_last_7d": 32.0,
+      "last_observation": "2026-02-16T18:00:00Z"
+    },
+    {
+      "cell_id": "wa-002",
+      "latitude": 46.9505,
+      "longitude": -123.1007,
+      "host_species_present": ["Pseudotsuga menziesii"],
+      "soil_temperature_c": 8.5,
+      "precipitation_mm_last_7d": 20.0,
+      "last_observation": "2026-02-16T18:00:00Z"
+    },
+    {
+      "cell_id": "or-001",
+      "latitude": 44.5002,
+      "longitude": -123.9004,
+      "host_species_present": ["Acer macrophyllum", "Quercus garryana"],
+      "soil_temperature_c": 10.0,
+      "precipitation_mm_last_7d": 18.0,
+      "last_observation": "2026-02-16T18:00:00Z"
+    }
+  ]
+}

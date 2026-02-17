@@ -1,0 +1,1 @@
+"""Mushroom nowcast application package."""

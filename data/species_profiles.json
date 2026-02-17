@@ -1,0 +1,54 @@
+{
+  "species": [
+    {
+      "id": "chanterelle",
+      "common_name": "Chanterelle",
+      "scientific_name": "Cantharellus cibarius",
+      "soil_temperature_c": { "minimum": 10.0, "maximum": 18.0 },
+      "precipitation_mm_last_7d": { "minimum": 15.0, "maximum": 60.0 },
+      "phenology_months": [7, 8, 9, 10],
+      "host_species": ["Pseudotsuga menziesii", "Tsuga heterophylla"],
+      "notes": "Prefers moist coniferous forests with mossy understory."
+    },
+    {
+      "id": "morel",
+      "common_name": "Morel",
+      "scientific_name": "Morchella esculenta",
+      "soil_temperature_c": { "minimum": 7.0, "maximum": 15.0 },
+      "precipitation_mm_last_7d": { "minimum": 10.0, "maximum": 45.0 },
+      "phenology_months": [4, 5, 6],
+      "host_species": ["Populus trichocarpa", "Pseudotsuga menziesii"],
+      "notes": "Often appears after spring rains and in burn areas."
+    },
+    {
+      "id": "gypsy",
+      "common_name": "Gypsy",
+      "scientific_name": "Cortinarius caperatus",
+      "soil_temperature_c": { "minimum": 8.0, "maximum": 16.0 },
+      "precipitation_mm_last_7d": { "minimum": 20.0, "maximum": 70.0 },
+      "phenology_months": [8, 9, 10],
+      "host_species": ["Picea sitchensis", "Pseudotsuga menziesii"],
+      "notes": "Forms mycorrhiza with conifers in mossy, acidic soils."
+    },
+    {
+      "id": "hedgehog",
+      "common_name": "Hedgehog",
+      "scientific_name": "Hydnum repandum",
+      "soil_temperature_c": { "minimum": 9.0, "maximum": 17.0 },
+      "precipitation_mm_last_7d": { "minimum": 18.0, "maximum": 65.0 },
+      "phenology_months": [8, 9, 10, 11],
+      "host_species": ["Abies grandis", "Tsuga heterophylla"],
+      "notes": "Prefers cool, damp conifer forests with thick duff layers."
+    },
+    {
+      "id": "lions-mane",
+      "common_name": "Lion's Mane",
+      "scientific_name": "Hericium erinaceus",
+      "soil_temperature_c": { "minimum": 5.0, "maximum": 15.0 },
+      "precipitation_mm_last_7d": { "minimum": 5.0, "maximum": 30.0 },
+      "phenology_months": [9, 10, 11],
+      "host_species": ["Acer macrophyllum", "Quercus garryana"],
+      "notes": "Saprophytic on hardwood snags and downed logs."
+    }
+  ]
+}
