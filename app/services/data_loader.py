@@ -7,6 +7,7 @@ from pathlib import Path
 
 from app.config import get_settings
 from app.models import HabitatCellCollection, SpeciesCatalog
+from app.services import data_cache
 
 
 def _load_json(path: Path) -> dict:
@@ -24,6 +25,10 @@ def load_species_catalog() -> SpeciesCatalog:
 
 
 def load_habitat_cells() -> HabitatCellCollection:
+    cached = data_cache.load_processed_cells()
+    if cached:
+        return cached
+
     settings = get_settings()
     payload = _load_json(settings.sample_cells_path)
     return HabitatCellCollection.model_validate(payload)
