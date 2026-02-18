@@ -1,6 +1,6 @@
 """API routes for the mushroom nowcast service."""
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -42,7 +42,7 @@ def list_species() -> dict:
 @router.get("/nowcast", summary="Get nowcast scores for a species")
 def nowcast(
     species_id: str = Query(default_factory=lambda: get_settings().default_species_id),
-    as_of: datetime | None = None,
+    as_of: Optional[datetime] = None,
     min_score: float = Query(0.0, ge=0.0, le=1.0),
 ) -> dict:
     reference_time = as_of or datetime.utcnow()
