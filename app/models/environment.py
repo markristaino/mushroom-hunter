@@ -1,6 +1,6 @@
 """Environmental grid cell models."""
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -14,6 +14,8 @@ class HabitatCell(BaseModel):
     host_species_present: List[str] = Field(default_factory=list)
     soil_temperature_c: float
     precipitation_mm_last_7d: float
+    soil_moisture_index: Optional[float] = Field(default=None)
+    canopy_density_pct: Optional[float] = Field(default=None)
     last_observation: datetime
 
 
