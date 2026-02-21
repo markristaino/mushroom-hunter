@@ -39,11 +39,13 @@ GRID_STEP = 0.1  # degrees (~8 km)
 ELEV_MIN_M = 200
 ELEV_MAX_M = 1600
 
-# USFS ArcGIS REST API for National Forest boundaries (Stage 3)
+# ESRI Living Atlas — National Forest Boundaries (public, no auth required)
 USFS_NF_URL = (
-    "https://apps.fs.usda.gov/arcgis/rest/services/EDW/"
-    "EDW_ForestSystemBoundaries_01/MapServer/0/query"
+    "https://services1.arcgis.com/gGHDlz6USftL5Pau/arcgis/rest/services/"
+    "National_Forest_Boundaries/FeatureServer/0/query"
 )
+# Bounding box for spatial query (minX,minY,maxX,maxY in WGS84)
+PNW_ENVELOPE = f"{LON_MIN},{LAT_MIN},{LON_MAX},{LAT_MAX}"
 
 # Open-Meteo endpoints
 ELEVATION_URL = "https://api.open-meteo.com/v1/elevation"
@@ -64,12 +66,16 @@ DEFAULT_HOST_SPECIES: List[str] = ["Pseudotsuga menziesii"]
 DEFAULT_CANOPY_PCT: float = 70.0
 
 NF_HOST_SPECIES: Dict[str, List[str]] = {
-    # Washington
+    # Washington — names match FOREST_GRA field in ESRI Living Atlas dataset
     "Olympic National Forest": [
         "Pseudotsuga menziesii", "Tsuga heterophylla",
         "Picea sitchensis", "Abies amabilis",
     ],
-    "Mt. Baker-Snoqualmie National Forest": [
+    "Mt. Baker National Forest": [
+        "Pseudotsuga menziesii", "Tsuga heterophylla",
+        "Abies amabilis", "Abies lasiocarpa",
+    ],
+    "Snoqualmie National Forest": [
         "Pseudotsuga menziesii", "Tsuga heterophylla",
         "Abies amabilis", "Abies lasiocarpa",
     ],
@@ -77,7 +83,11 @@ NF_HOST_SPECIES: Dict[str, List[str]] = {
         "Pseudotsuga menziesii", "Tsuga heterophylla",
         "Abies amabilis", "Populus trichocarpa",
     ],
-    "Okanogan-Wenatchee National Forest": [
+    "Okanogan National Forest": [
+        "Pseudotsuga menziesii", "Pinus ponderosa",
+        "Tsuga heterophylla", "Abies lasiocarpa", "Populus trichocarpa",
+    ],
+    "Wenatchee National Forest": [
         "Pseudotsuga menziesii", "Pinus ponderosa",
         "Tsuga heterophylla", "Abies lasiocarpa", "Populus trichocarpa",
     ],
@@ -102,16 +112,30 @@ NF_HOST_SPECIES: Dict[str, List[str]] = {
         "Pseudotsuga menziesii", "Tsuga heterophylla",
         "Quercus garryana",
     ],
-    "Rogue River-Siskiyou National Forest": [
+    "Rogue River National Forest": [
         "Pseudotsuga menziesii", "Pinus ponderosa",
         "Quercus garryana", "Fraxinus latifolia",
+    ],
+    "Siskiyou National Forest": [
+        "Pseudotsuga menziesii", "Pinus ponderosa",
+        "Quercus garryana",
+    ],
+    "Klamath National Forest": [
+        "Pseudotsuga menziesii", "Pinus ponderosa",
+        "Quercus garryana",
     ],
     "Deschutes National Forest": [
         "Pinus ponderosa", "Pseudotsuga menziesii",
         "Populus trichocarpa",
     ],
-    "Fremont-Winema National Forest": [
+    "Fremont National Forest": [
         "Pinus ponderosa", "Abies lasiocarpa",
+    ],
+    "Winema National Forest": [
+        "Pinus ponderosa", "Abies lasiocarpa",
+    ],
+    "Ochoco National Forest": [
+        "Pinus ponderosa", "Pseudotsuga menziesii",
     ],
     "Umatilla National Forest": [
         "Pseudotsuga menziesii", "Pinus ponderosa",
@@ -120,24 +144,32 @@ NF_HOST_SPECIES: Dict[str, List[str]] = {
     "Malheur National Forest": [
         "Pseudotsuga menziesii", "Pinus ponderosa",
     ],
-    "Wallowa-Whitman National Forest": [
+    "Wallowa National Forest": [
         "Pseudotsuga menziesii", "Pinus ponderosa",
         "Populus trichocarpa", "Betula spp.",
     ],
+    "Whitman National Forest": [
+        "Pseudotsuga menziesii", "Pinus ponderosa",
+        "Populus trichocarpa",
+    ],
     # Idaho
-    "Idaho Panhandle National Forests": [
+    "Kaniksu National Forest": [
         "Pseudotsuga menziesii", "Pinus ponderosa",
         "Betula spp.", "Populus trichocarpa",
     ],
+    "Coeur D Alene National Forest": [
+        "Pseudotsuga menziesii", "Pinus ponderosa",
+        "Betula spp.", "Populus trichocarpa",
+    ],
+    "St. Joe National Forest": [
+        "Pseudotsuga menziesii", "Pinus ponderosa",
+        "Betula spp.", "Populus trichocarpa",
+    ],
+    "Nezperce National Forest": [
+        "Pseudotsuga menziesii", "Pinus ponderosa",
+        "Populus trichocarpa",
+    ],
     "Clearwater National Forest": [
-        "Pseudotsuga menziesii", "Pinus ponderosa",
-        "Populus trichocarpa",
-    ],
-    "Nez Perce National Forest": [
-        "Pseudotsuga menziesii", "Pinus ponderosa",
-        "Populus trichocarpa",
-    ],
-    "Nez Perce-Clearwater National Forest": [
         "Pseudotsuga menziesii", "Pinus ponderosa",
         "Populus trichocarpa",
     ],
@@ -147,34 +179,44 @@ NF_HOST_SPECIES: Dict[str, List[str]] = {
     "Boise National Forest": [
         "Pseudotsuga menziesii", "Pinus ponderosa",
     ],
-    "Sawtooth National Forest": [
-        "Pinus ponderosa", "Pseudotsuga menziesii",
+    # Montana/Idaho border
+    "Kootenai National Forest": [
+        "Pseudotsuga menziesii", "Pinus ponderosa",
+        "Betula spp.", "Populus trichocarpa",
     ],
 }
 
 CANOPY_BY_FOREST: Dict[str, float] = {
     "Olympic National Forest": 90.0,
-    "Mt. Baker-Snoqualmie National Forest": 85.0,
+    "Mt. Baker National Forest": 85.0,
+    "Snoqualmie National Forest": 85.0,
     "Gifford Pinchot National Forest": 80.0,
-    "Okanogan-Wenatchee National Forest": 65.0,
+    "Okanogan National Forest": 65.0,
+    "Wenatchee National Forest": 68.0,
     "Colville National Forest": 65.0,
     "Siuslaw National Forest": 80.0,
     "Mt. Hood National Forest": 78.0,
     "Willamette National Forest": 82.0,
     "Umpqua National Forest": 72.0,
-    "Rogue River-Siskiyou National Forest": 70.0,
+    "Rogue River National Forest": 70.0,
+    "Siskiyou National Forest": 68.0,
+    "Klamath National Forest": 65.0,
     "Deschutes National Forest": 55.0,
-    "Fremont-Winema National Forest": 50.0,
+    "Fremont National Forest": 50.0,
+    "Winema National Forest": 52.0,
+    "Ochoco National Forest": 50.0,
     "Umatilla National Forest": 55.0,
     "Malheur National Forest": 55.0,
-    "Wallowa-Whitman National Forest": 58.0,
-    "Idaho Panhandle National Forests": 70.0,
+    "Wallowa National Forest": 60.0,
+    "Whitman National Forest": 58.0,
+    "Kaniksu National Forest": 70.0,
+    "Coeur D Alene National Forest": 70.0,
+    "St. Joe National Forest": 72.0,
+    "Nezperce National Forest": 68.0,
     "Clearwater National Forest": 72.0,
-    "Nez Perce National Forest": 68.0,
-    "Nez Perce-Clearwater National Forest": 70.0,
     "Payette National Forest": 62.0,
     "Boise National Forest": 60.0,
-    "Sawtooth National Forest": 50.0,
+    "Kootenai National Forest": 72.0,
 }
 
 
@@ -253,8 +295,8 @@ def _filter_by_elevation(candidates: List[dict]) -> List[dict]:
                 point["elevation_m"] = elev
                 surviving.append(point)
 
-        # Polite pause to avoid hitting Open-Meteo rate limits
-        time.sleep(0.5)
+        # Polite pause between batches to stay under Open-Meteo rate limits
+        time.sleep(1.0)
 
     print(f"Stage 2: {len(surviving)} points survive elevation filter "
           f"({ELEV_MIN_M}–{ELEV_MAX_M} m)")
@@ -278,13 +320,17 @@ def _fetch_nf_polygons() -> List[Tuple[str, object]]:
 
     while True:
         params = {
-            "where": "REGION IN ('01','04','06')",
-            "outFields": "FORESTNAME",
+            "where": "UNITCLASSI='National Forest'",
+            "geometry": PNW_ENVELOPE,
+            "geometryType": "esriGeometryEnvelope",
+            "spatialRel": "esriSpatialRelIntersects",
+            "inSR": "4326",
+            "outFields": "FOREST_GRA",
             "f": "geojson",
             "resultRecordCount": page_size,
             "resultOffset": offset,
             "geometryPrecision": 4,
-            "outSR": 4326,
+            "outSR": "4326",
         }
         try:
             resp = requests.get(USFS_NF_URL, params=params, timeout=30)
@@ -299,7 +345,7 @@ def _fetch_nf_polygons() -> List[Tuple[str, object]]:
             break
 
         for feat in page_features:
-            name = feat.get("properties", {}).get("FORESTNAME", "Unknown Forest")
+            name = feat.get("properties", {}).get("FOREST_GRA", "Unknown Forest")
             try:
                 geom = shape(feat["geometry"])
                 features.append((name, geom))
