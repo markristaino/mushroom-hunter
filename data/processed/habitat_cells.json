@@ -1,0 +1,309 @@
+{
+  "cells": [
+    {
+      "cell_id": "wa-001",
+      "latitude": 47.4254,
+      "longitude": -121.4133,
+      "host_species_present": [
+        "Pseudotsuga menziesii",
+        "Tsuga heterophylla"
+      ],
+      "soil_temperature_c": 1.3,
+      "precipitation_mm_last_7d": 11.6,
+      "soil_moisture_index": 0.285,
+      "canopy_density_pct": 85.0,
+      "last_observation": "2026-02-21T01:57:25.252320Z"
+    },
+    {
+      "cell_id": "wa-002",
+      "latitude": 47.8601,
+      "longitude": -123.9344,
+      "host_species_present": [
+        "Pseudotsuga menziesii",
+        "Tsuga heterophylla",
+        "Picea sitchensis"
+      ],
+      "soil_temperature_c": 2.6,
+      "precipitation_mm_last_7d": 17.7,
+      "soil_moisture_index": 0.321,
+      "canopy_density_pct": 90.0,
+      "last_observation": "2026-02-21T01:57:26.183666Z"
+    },
+    {
+      "cell_id": "wa-003",
+      "latitude": 46.7445,
+      "longitude": -121.9982,
+      "host_species_present": [
+        "Pseudotsuga menziesii",
+        "Abies amabilis"
+      ],
+      "soil_temperature_c": 2.0,
+      "precipitation_mm_last_7d": 7.6,
+      "soil_moisture_index": 0.288,
+      "canopy_density_pct": 80.0,
+      "last_observation": "2026-02-21T01:57:27.104469Z"
+    },
+    {
+      "cell_id": "wa-004",
+      "latitude": 47.7454,
+      "longitude": -121.0899,
+      "host_species_present": [
+        "Pseudotsuga menziesii",
+        "Tsuga heterophylla",
+        "Pinus ponderosa"
+      ],
+      "soil_temperature_c": -0.9,
+      "precipitation_mm_last_7d": 11.9,
+      "soil_moisture_index": 0.285,
+      "canopy_density_pct": 82.0,
+      "last_observation": "2026-02-21T01:57:28.017292Z"
+    },
+    {
+      "cell_id": "wa-005",
+      "latitude": 46.577,
+      "longitude": -123.526,
+      "host_species_present": [
+        "Pseudotsuga menziesii",
+        "Tsuga heterophylla"
+      ],
+      "soil_temperature_c": 1.2,
+      "precipitation_mm_last_7d": 15.8,
+      "soil_moisture_index": 0.297,
+      "canopy_density_pct": 78.0,
+      "last_observation": "2026-02-21T01:57:28.939147Z"
+    },
+    {
+      "cell_id": "wa-006",
+      "latitude": 45.7054,
+      "longitude": -121.522,
+      "host_species_present": [
+        "Pseudotsuga menziesii",
+        "Quercus garryana"
+      ],
+      "soil_temperature_c": 2.8,
+      "precipitation_mm_last_7d": 16.5,
+      "soil_moisture_index": 0.168,
+      "canopy_density_pct": 65.0,
+      "last_observation": "2026-02-21T01:57:29.863402Z"
+    },
+    {
+      "cell_id": "wa-007",
+      "latitude": 48.4102,
+      "longitude": -119.505,
+      "host_species_present": [
+        "Populus trichocarpa",
+        "Pinus ponderosa"
+      ],
+      "soil_temperature_c": -0.1,
+      "precipitation_mm_last_7d": 3.1,
+      "soil_moisture_index": 0.286,
+      "canopy_density_pct": 55.0,
+      "last_observation": "2026-02-21T01:57:30.785587Z"
+    },
+    {
+      "cell_id": "wa-008",
+      "latitude": 47.6062,
+      "longitude": -122.3321,
+      "host_species_present": [
+        "Acer macrophyllum",
+        "Pseudotsuga menziesii"
+      ],
+      "soil_temperature_c": 2.0,
+      "precipitation_mm_last_7d": 4.9,
+      "soil_moisture_index": 0.285,
+      "canopy_density_pct": 45.0,
+      "last_observation": "2026-02-21T01:57:31.707322Z"
+    },
+    {
+      "cell_id": "wa-009",
+      "latitude": 48.6734,
+      "longitude": -121.2424,
+      "host_species_present": [
+        "Pseudotsuga menziesii",
+        "Tsuga heterophylla",
+        "Abies lasiocarpa"
+      ],
+      "soil_temperature_c": 4.6,
+      "precipitation_mm_last_7d": 8.3,
+      "soil_moisture_index": 0.28,
+      "canopy_density_pct": 88.0,
+      "last_observation": "2026-02-21T01:57:32.630639Z"
+    },
+    {
+      "cell_id": "wa-010",
+      "latitude": 46.1558,
+      "longitude": -122.9007,
+      "host_species_present": [
+        "Pseudotsuga menziesii",
+        "Picea sitchensis"
+      ],
+      "soil_temperature_c": 2.4,
+      "precipitation_mm_last_7d": 9.5,
+      "soil_moisture_index": 0.289,
+      "canopy_density_pct": 75.0,
+      "last_observation": "2026-02-21T01:57:33.554813Z"
+    },
+    {
+      "cell_id": "or-001",
+      "latitude": 45.4553,
+      "longitude": -123.837,
+      "host_species_present": [
+        "Pseudotsuga menziesii",
+        "Picea sitchensis",
+        "Tsuga heterophylla"
+      ],
+      "soil_temperature_c": 11.0,
+      "precipitation_mm_last_7d": 26.8,
+      "soil_moisture_index": 0.0,
+      "canopy_density_pct": 80.0,
+      "last_observation": "2026-02-21T01:57:34.478123Z"
+    },
+    {
+      "cell_id": "or-002",
+      "latitude": 44.9429,
+      "longitude": -123.0351,
+      "host_species_present": [
+        "Quercus garryana",
+        "Acer macrophyllum",
+        "Fraxinus latifolia"
+      ],
+      "soil_temperature_c": 3.8,
+      "precipitation_mm_last_7d": 17.1,
+      "soil_moisture_index": 0.301,
+      "canopy_density_pct": 40.0,
+      "last_observation": "2026-02-21T01:57:35.403390Z"
+    },
+    {
+      "cell_id": "or-003",
+      "latitude": 45.37,
+      "longitude": -121.97,
+      "host_species_present": [
+        "Pseudotsuga menziesii",
+        "Abies amabilis",
+        "Tsuga heterophylla"
+      ],
+      "soil_temperature_c": 1.4,
+      "precipitation_mm_last_7d": 37.0,
+      "soil_moisture_index": 0.302,
+      "canopy_density_pct": 78.0,
+      "last_observation": "2026-02-21T01:57:36.325763Z"
+    },
+    {
+      "cell_id": "or-004",
+      "latitude": 43.2165,
+      "longitude": -123.3614,
+      "host_species_present": [
+        "Pseudotsuga menziesii",
+        "Quercus garryana"
+      ],
+      "soil_temperature_c": 3.9,
+      "precipitation_mm_last_7d": 7.1,
+      "soil_moisture_index": 0.289,
+      "canopy_density_pct": 72.0,
+      "last_observation": "2026-02-21T01:57:37.233874Z"
+    },
+    {
+      "cell_id": "or-005",
+      "latitude": 42.1561,
+      "longitude": -123.3494,
+      "host_species_present": [
+        "Pseudotsuga menziesii",
+        "Pinus ponderosa",
+        "Quercus garryana"
+      ],
+      "soil_temperature_c": 1.8,
+      "precipitation_mm_last_7d": 21.9,
+      "soil_moisture_index": 0.297,
+      "canopy_density_pct": 70.0,
+      "last_observation": "2026-02-21T01:57:38.142090Z"
+    },
+    {
+      "cell_id": "or-006",
+      "latitude": 45.52,
+      "longitude": -118.42,
+      "host_species_present": [
+        "Populus trichocarpa",
+        "Pinus ponderosa",
+        "Pseudotsuga menziesii"
+      ],
+      "soil_temperature_c": 0.4,
+      "precipitation_mm_last_7d": 13.6,
+      "soil_moisture_index": 0.307,
+      "canopy_density_pct": 50.0,
+      "last_observation": "2026-02-21T01:57:39.057943Z"
+    },
+    {
+      "cell_id": "or-007",
+      "latitude": 42.96,
+      "longitude": -122.44,
+      "host_species_present": [
+        "Abies lasiocarpa",
+        "Pinus ponderosa"
+      ],
+      "soil_temperature_c": -0.7,
+      "precipitation_mm_last_7d": 19.6,
+      "soil_moisture_index": 0.297,
+      "canopy_density_pct": 68.0,
+      "last_observation": "2026-02-21T01:57:39.979343Z"
+    },
+    {
+      "cell_id": "or-008",
+      "latitude": 44.0582,
+      "longitude": -121.3153,
+      "host_species_present": [
+        "Pinus ponderosa",
+        "Populus trichocarpa"
+      ],
+      "soil_temperature_c": -0.6,
+      "precipitation_mm_last_7d": 0.2,
+      "soil_moisture_index": 0.191,
+      "canopy_density_pct": 55.0,
+      "last_observation": "2026-02-21T01:57:40.893361Z"
+    },
+    {
+      "cell_id": "or-009",
+      "latitude": 44.6365,
+      "longitude": -124.0534,
+      "host_species_present": [
+        "Picea sitchensis",
+        "Tsuga heterophylla",
+        "Acer macrophyllum"
+      ],
+      "soil_temperature_c": 6.3,
+      "precipitation_mm_last_7d": 20.1,
+      "soil_moisture_index": 0.342,
+      "canopy_density_pct": 75.0,
+      "last_observation": "2026-02-21T01:57:41.813322Z"
+    },
+    {
+      "cell_id": "id-001",
+      "latitude": 47.6777,
+      "longitude": -116.7805,
+      "host_species_present": [
+        "Pseudotsuga menziesii",
+        "Pinus ponderosa",
+        "Betula spp."
+      ],
+      "soil_temperature_c": -0.0,
+      "precipitation_mm_last_7d": 20.4,
+      "soil_moisture_index": 0.274,
+      "canopy_density_pct": 70.0,
+      "last_observation": "2026-02-21T01:57:42.735862Z"
+    },
+    {
+      "cell_id": "id-002",
+      "latitude": 46.4165,
+      "longitude": -115.5281,
+      "host_species_present": [
+        "Populus trichocarpa",
+        "Pinus ponderosa",
+        "Pseudotsuga menziesii"
+      ],
+      "soil_temperature_c": 0.2,
+      "precipitation_mm_last_7d": 4.9,
+      "soil_moisture_index": 0.284,
+      "canopy_density_pct": 72.0,
+      "last_observation": "2026-02-21T01:57:43.653204Z"
+    }
+  ]
+}

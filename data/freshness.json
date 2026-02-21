@@ -1,0 +1,8 @@
+{
+  "open_meteo_weather": {
+    "source_id": "open_meteo_weather",
+    "output_path": "data/processed/habitat_cells.json",
+    "rows_written": 21,
+    "last_ingested": "2026-02-21T01:57:43.658195+00:00"
+  }
+}
