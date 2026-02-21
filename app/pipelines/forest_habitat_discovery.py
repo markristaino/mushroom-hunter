@@ -2,11 +2,16 @@
 
 Stages:
   1. Generate ~6,400 candidate grid points at 0.1° spacing across the PNW.
-  2. Batch-query Open-Meteo Elevation API; keep 200–1,600 m points only.
-  3. Fetch USFS National Forest polygons; keep only points inside NF land.
-  4. Fetch real soil-temp / precip / soil-moisture from Open-Meteo (parallel).
-  5. Score every cell against every species profile; select best-scoring subset.
-  6. Write output using existing write_collection / update_freshness helpers.
+  2. Fetch USFS National Forest polygons; keep only points inside NF land.
+  3. Fetch real soil-temp / precip / soil-moisture from Open-Meteo (parallel).
+     The forecast response includes an `elevation` field; cells outside
+     200–1,600 m are dropped here instead of making a separate elevation API call.
+  4. Score every cell against every species profile; select best-scoring subset.
+  5. Write output using existing write_collection / update_freshness helpers.
+
+Note on elevation: we intentionally avoid the Open-Meteo Elevation API because
+its rate limit is too restrictive for 65+ batch calls. The forecast endpoint
+returns elevation metadata for free, so we filter there.
 """
 from __future__ import annotations
 
@@ -35,38 +40,42 @@ LAT_MIN, LAT_MAX = 42.0, 49.0
 LON_MIN, LON_MAX = -125.0, -116.0
 GRID_STEP = 0.1  # degrees (~8 km)
 
-# Elevation filter thresholds in metres (Stage 2)
+# Elevation thresholds applied using the forecast API's elevation field (Stage 3)
 ELEV_MIN_M = 200
 ELEV_MAX_M = 1600
 
 # ESRI Living Atlas — National Forest Boundaries (public, no auth required)
+# Forest name field: FOREST_GRA (historical pre-merger names)
 USFS_NF_URL = (
     "https://services1.arcgis.com/gGHDlz6USftL5Pau/arcgis/rest/services/"
     "National_Forest_Boundaries/FeatureServer/0/query"
 )
-# Bounding box for spatial query (minX,minY,maxX,maxY in WGS84)
+# Spatial filter bounding box (minX,minY,maxX,maxY WGS84)
 PNW_ENVELOPE = f"{LON_MIN},{LAT_MIN},{LON_MAX},{LAT_MAX}"
 
-# Open-Meteo endpoints
-ELEVATION_URL = "https://api.open-meteo.com/v1/elevation"
+# Open-Meteo forecast endpoint
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 
-# Weather fetch concurrency (Stage 4)
-MAX_WEATHER_WORKERS = 10
+# Weather fetch concurrency — kept low to stay under Open-Meteo rate limits
+MAX_WEATHER_WORKERS = 3
+# Seconds between task submissions to throttle to ~3 req/s
+SUBMIT_INTERVAL = 0.35
 
-# Scoring thresholds (Stage 5)
+# Scoring thresholds (Stage 4)
 TOP_N_PER_SPECIES = 15
 HIGH_SCORE_THRESHOLD = 0.5
 
 # ---------------------------------------------------------------------------
 # National Forest host-species and canopy lookup tables
+# Names match the FOREST_GRA field in the ESRI Living Atlas dataset
+# (historical pre-merger names, not the modern combined names)
 # Scientific names must match those used in species_profiles.json
 # ---------------------------------------------------------------------------
 DEFAULT_HOST_SPECIES: List[str] = ["Pseudotsuga menziesii"]
 DEFAULT_CANOPY_PCT: float = 70.0
 
 NF_HOST_SPECIES: Dict[str, List[str]] = {
-    # Washington — names match FOREST_GRA field in ESRI Living Atlas dataset
+    # Washington
     "Olympic National Forest": [
         "Pseudotsuga menziesii", "Tsuga heterophylla",
         "Picea sitchensis", "Abies amabilis",
@@ -241,10 +250,6 @@ def _generate_candidates() -> List[dict]:
     return candidates
 
 
-# ---------------------------------------------------------------------------
-# Stage 2 — Elevation Filter
-# ---------------------------------------------------------------------------
-
 def _batched(iterable, n: int):
     """Yield successive n-sized chunks from iterable."""
     it = iter(iterable)
@@ -252,71 +257,20 @@ def _batched(iterable, n: int):
         yield batch
 
 
-def _filter_by_elevation(candidates: List[dict]) -> List[dict]:
-    """Keep only points within ELEV_MIN_M–ELEV_MAX_M via Open-Meteo Elevation API."""
-    surviving = []
-    batches = list(_batched(candidates, 100))
-    print(f"Stage 2: checking elevation for {len(candidates)} candidates "
-          f"in {len(batches)} batches...")
-
-    for i, batch in enumerate(batches, start=1):
-        lats = ",".join(str(p["latitude"]) for p in batch)
-        lons = ",".join(str(p["longitude"]) for p in batch)
-        # Retry up to 3 times with backoff on rate-limit responses
-        for attempt in range(3):
-            try:
-                resp = requests.get(
-                    ELEVATION_URL,
-                    params={"latitude": lats, "longitude": lons},
-                    timeout=15,
-                )
-                if resp.status_code == 429:
-                    wait = 2 ** attempt * 2  # 2s, 4s, 8s
-                    logger.warning(
-                        "Elevation batch %d/%d rate-limited; retrying in %ds",
-                        i, len(batches), wait,
-                    )
-                    time.sleep(wait)
-                    continue
-                resp.raise_for_status()
-                elevations = resp.json().get("elevation", [])
-                break
-            except Exception as exc:
-                if attempt == 2:
-                    logger.warning("Elevation batch %d/%d failed: %s", i, len(batches), exc)
-                    elevations = []
-                else:
-                    time.sleep(2 ** attempt)
-        else:
-            elevations = []
-
-        for point, elev in zip(batch, elevations):
-            if elev is not None and ELEV_MIN_M <= elev <= ELEV_MAX_M:
-                point["elevation_m"] = elev
-                surviving.append(point)
-
-        # Polite pause between batches to stay under Open-Meteo rate limits
-        time.sleep(1.0)
-
-    print(f"Stage 2: {len(surviving)} points survive elevation filter "
-          f"({ELEV_MIN_M}–{ELEV_MAX_M} m)")
-    return surviving
-
-
 # ---------------------------------------------------------------------------
-# Stage 3 — National Forest Filter
+# Stage 2 — National Forest Filter
 # ---------------------------------------------------------------------------
 
 def _fetch_nf_polygons() -> List[Tuple[str, object]]:
-    """Fetch NF boundary polygons from USFS ArcGIS REST API.
+    """Fetch NF boundary polygons from ESRI Living Atlas.
 
     Returns list of (forest_name, shapely_geometry) tuples.
-    Paginates until all features are received.
+    Uses a spatial bounding box filter to retrieve only PNW forests.
     """
     features: List[Tuple[str, object]] = []
     offset = 0
     page_size = 100
-    print("Stage 3: fetching National Forest boundaries from USFS ArcGIS...")
+    print("Stage 2: fetching National Forest boundaries from ESRI Living Atlas...")
 
     while True:
         params = {
@@ -348,6 +302,9 @@ def _fetch_nf_polygons() -> List[Tuple[str, object]]:
             name = feat.get("properties", {}).get("FOREST_GRA", "Unknown Forest")
             try:
                 geom = shape(feat["geometry"])
+                # buffer(0) repairs self-intersections and other topology errors
+                if not geom.is_valid:
+                    geom = geom.buffer(0)
                 features.append((name, geom))
             except Exception as exc:
                 logger.warning("Could not parse geometry for '%s': %s", name, exc)
@@ -359,7 +316,7 @@ def _fetch_nf_polygons() -> List[Tuple[str, object]]:
             break  # last page
         offset += page_size
 
-    print(f"Stage 3: loaded {len(features)} National Forest polygon(s)")
+    print(f"Stage 2: loaded {len(features)} National Forest polygon(s)")
     return features
 
 
@@ -372,7 +329,11 @@ def _filter_by_national_forest(
     for point in candidates:
         pt = Point(point["longitude"], point["latitude"])
         for forest_name, geom in nf_polygons:
-            if geom.contains(pt):
+            try:
+                hit = geom.contains(pt)
+            except Exception:
+                hit = False
+            if hit:
                 point["forest_name"] = forest_name
                 point["host_species_present"] = NF_HOST_SPECIES.get(
                     forest_name, DEFAULT_HOST_SPECIES
@@ -383,16 +344,21 @@ def _filter_by_national_forest(
                 surviving.append(point)
                 break  # assign to first matching forest only
 
-    print(f"Stage 3: {len(surviving)} points inside National Forest boundaries")
+    print(f"Stage 2: {len(surviving)} points inside National Forest boundaries")
     return surviving
 
 
 # ---------------------------------------------------------------------------
-# Stage 4 — Real Weather Fetch (parallel)
+# Stage 3 — Real Weather Fetch (parallel) + elevation filter
 # ---------------------------------------------------------------------------
 
-def _fetch_weather(point: dict) -> HabitatCell:
-    """Fetch soil-temp / precip / soil-moisture from Open-Meteo for one point."""
+def _fetch_weather(point: dict) -> Optional[HabitatCell]:
+    """Fetch soil-temp / precip / soil-moisture from Open-Meteo for one point.
+
+    Returns None if the point's elevation falls outside ELEV_MIN_M–ELEV_MAX_M.
+    The forecast API returns an `elevation` metadata field at no extra cost.
+    Retries up to 4 times with exponential backoff on 429 responses.
+    """
     params = {
         "latitude": point["latitude"],
         "longitude": point["longitude"],
@@ -402,9 +368,23 @@ def _fetch_weather(point: dict) -> HabitatCell:
         "forecast_days": 1,
         "timezone": "America/Los_Angeles",
     }
-    resp = requests.get(FORECAST_URL, params=params, timeout=15)
-    resp.raise_for_status()
+    for attempt in range(4):
+        resp = requests.get(FORECAST_URL, params=params, timeout=15)
+        if resp.status_code == 429:
+            wait = 2 ** attempt * 5  # 5s, 10s, 20s, 40s
+            logger.debug("Rate-limited on %s; sleeping %ds", point["cell_id"], wait)
+            time.sleep(wait)
+            continue
+        resp.raise_for_status()
+        break
+    else:
+        raise RuntimeError(f"Rate-limited after 4 attempts for {point['cell_id']}")
     data = resp.json()
+
+    # Elevation filter using metadata returned by the forecast API
+    elev = data.get("elevation")
+    if elev is not None and not (ELEV_MIN_M <= elev <= ELEV_MAX_M):
+        return None
 
     soil_temps: List[Optional[float]] = data["hourly"]["soil_temperature_6cm"]
     soil_temp = next((v for v in reversed(soil_temps) if v is not None), 0.0)
@@ -429,33 +409,45 @@ def _fetch_weather(point: dict) -> HabitatCell:
 
 
 def _fetch_all_weather(points: List[dict]) -> List[HabitatCell]:
-    """Fetch weather for all NF-filtered points in parallel."""
+    """Fetch weather for all NF-filtered points in parallel.
+
+    Points outside the elevation band are silently dropped (not counted as errors).
+    """
     cells: List[HabitatCell] = []
+    elev_dropped = 0
     errors = 0
     total = len(points)
-    print(f"Stage 4: fetching weather for {total} points "
+    print(f"Stage 3: fetching weather for {total} points "
           f"({MAX_WEATHER_WORKERS} parallel workers)...")
 
     with ThreadPoolExecutor(max_workers=MAX_WEATHER_WORKERS) as executor:
-        future_to_point = {executor.submit(_fetch_weather, p): p for p in points}
+        future_to_point = {}
+        for p in points:
+            future_to_point[executor.submit(_fetch_weather, p)] = p
+            time.sleep(SUBMIT_INTERVAL)  # throttle submission rate
         for future in as_completed(future_to_point):
             point = future_to_point[future]
             try:
-                cells.append(future.result())
-                if len(cells) % 50 == 0:
-                    print(f"  {len(cells)}/{total} weather fetches complete...")
+                result = future.result()
+                if result is None:
+                    elev_dropped += 1
+                else:
+                    cells.append(result)
+                    if len(cells) % 50 == 0:
+                        print(f"  {len(cells)} cells collected so far...")
             except Exception as exc:
                 errors += 1
                 logger.warning(
                     "Weather fetch failed for %s: %s", point["cell_id"], exc
                 )
 
-    print(f"Stage 4: {len(cells)} OK, {errors} failed")
+    print(f"Stage 3: {len(cells)} cells with weather, "
+          f"{elev_dropped} outside elevation band, {errors} errors")
     return cells
 
 
 # ---------------------------------------------------------------------------
-# Stage 5 — Score + Select
+# Stage 4 — Score + Select
 # ---------------------------------------------------------------------------
 
 def _score_and_select(
@@ -478,11 +470,9 @@ def _score_and_select(
         scored = [scorer.score_cell(cell, profile, reference_time) for cell in cells]
         scored.sort(key=lambda sc: sc.score, reverse=True)
 
-        # Top N per species
         for sc in scored[:TOP_N_PER_SPECIES]:
             selected_ids.add(sc.cell.cell_id)
 
-        # High-score threshold
         for sc in scored:
             if sc.score >= HIGH_SCORE_THRESHOLD:
                 high_score_ids.add(sc.cell.cell_id)
@@ -496,9 +486,9 @@ def _score_and_select(
     cell_by_id = {cell.cell_id: cell for cell in cells}
     output = [cell_by_id[cid] for cid in selected_ids if cid in cell_by_id]
 
-    print(f"Stage 5: selected {len(output)} cells "
-          f"(top-{TOP_N_PER_SPECIES}/species + {len(high_score_ids)} high-score "
-          f"≥{HIGH_SCORE_THRESHOLD})")
+    print(f"Stage 4: selected {len(output)} cells "
+          f"(top-{TOP_N_PER_SPECIES}/species + {len(high_score_ids)} "
+          f"high-score ≥{HIGH_SCORE_THRESHOLD})")
     return output
 
 
@@ -514,33 +504,28 @@ def run() -> IngestionResult:
         catalog = SpeciesCatalog.model_validate(json.load(fh))
     profiles = catalog.species
 
-    # Stage 1
+    # Stage 1 — candidate grid
     print("Stage 1: generating candidate grid...")
     candidates = _generate_candidates()
-    print(f"Stage 1: {len(candidates)} candidate points generated")
+    print(f"Stage 1: {len(candidates)} candidate points")
 
-    # Stage 2
-    elev_filtered = _filter_by_elevation(candidates)
-    if not elev_filtered:
-        raise RuntimeError("No candidates survived elevation filter")
-
-    # Stage 3
+    # Stage 2 — NF boundary filter
     nf_polygons = _fetch_nf_polygons()
     if not nf_polygons:
         raise RuntimeError("Failed to fetch any National Forest polygons")
-    nf_filtered = _filter_by_national_forest(elev_filtered, nf_polygons)
+    nf_filtered = _filter_by_national_forest(candidates, nf_polygons)
     if not nf_filtered:
         raise RuntimeError("No candidates fall inside National Forest boundaries")
 
-    # Stage 4
+    # Stage 3 — weather fetch + elevation filter
     cells = _fetch_all_weather(nf_filtered)
     if not cells:
         raise RuntimeError("All weather fetches failed — cannot produce output")
 
-    # Stage 5
+    # Stage 4 — score + select
     output_cells = _score_and_select(cells, profiles)
 
-    # Stage 6 — Write output
+    # Stage 5 — write output
     collection = HabitatCellCollection(cells=output_cells)
     rows = write_collection(collection, settings.processed_grid_path)
 
