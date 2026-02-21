@@ -18,7 +18,6 @@ from __future__ import annotations
 import json
 import logging
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from itertools import islice
 from typing import Dict, List, Optional, Tuple
@@ -38,7 +37,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 LAT_MIN, LAT_MAX = 42.0, 49.0
 LON_MIN, LON_MAX = -125.0, -116.0
-GRID_STEP = 0.1  # degrees (~8 km)
+GRID_STEP = 0.05  # degrees (~5 km)
 
 # Elevation thresholds applied using the forecast API's elevation field (Stage 3)
 ELEV_MIN_M = 200
@@ -56,10 +55,8 @@ PNW_ENVELOPE = f"{LON_MIN},{LAT_MIN},{LON_MAX},{LAT_MAX}"
 # Open-Meteo forecast endpoint
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 
-# Weather fetch concurrency — kept low to stay under Open-Meteo rate limits
-MAX_WEATHER_WORKERS = 3
-# Seconds between task submissions to throttle to ~3 req/s
-SUBMIT_INTERVAL = 0.35
+# Seconds between sequential weather requests (120 req/min, well under 600/min limit)
+WEATHER_REQUEST_INTERVAL = 0.5
 
 # Scoring thresholds (Stage 4)
 TOP_N_PER_SPECIES = 15
@@ -371,6 +368,12 @@ def _fetch_weather(point: dict) -> Optional[HabitatCell]:
     for attempt in range(4):
         resp = requests.get(FORECAST_URL, params=params, timeout=15)
         if resp.status_code == 429:
+            body = resp.json() if resp.content else {}
+            if "daily" in body.get("reason", "").lower() or "limit exceeded" in body.get("reason", "").lower():
+                raise RuntimeError(
+                    f"Open-Meteo daily API limit exceeded. Resets at midnight UTC. "
+                    f"({body.get('reason', '')})"
+                )
             wait = 2 ** attempt * 5  # 5s, 10s, 20s, 40s
             logger.debug("Rate-limited on %s; sleeping %ds", point["cell_id"], wait)
             time.sleep(wait)
@@ -409,37 +412,36 @@ def _fetch_weather(point: dict) -> Optional[HabitatCell]:
 
 
 def _fetch_all_weather(points: List[dict]) -> List[HabitatCell]:
-    """Fetch weather for all NF-filtered points in parallel.
+    """Fetch weather sequentially with a fixed interval between requests.
 
-    Points outside the elevation band are silently dropped (not counted as errors).
+    Sequential (not parallel) to stay well under Open-Meteo's 600 req/min limit.
+    Points outside the elevation band are silently dropped.
     """
     cells: List[HabitatCell] = []
     elev_dropped = 0
     errors = 0
     total = len(points)
     print(f"Stage 3: fetching weather for {total} points "
-          f"({MAX_WEATHER_WORKERS} parallel workers)...")
+          f"(sequential, {WEATHER_REQUEST_INTERVAL}s interval)...")
 
-    with ThreadPoolExecutor(max_workers=MAX_WEATHER_WORKERS) as executor:
-        future_to_point = {}
-        for p in points:
-            future_to_point[executor.submit(_fetch_weather, p)] = p
-            time.sleep(SUBMIT_INTERVAL)  # throttle submission rate
-        for future in as_completed(future_to_point):
-            point = future_to_point[future]
-            try:
-                result = future.result()
-                if result is None:
-                    elev_dropped += 1
-                else:
-                    cells.append(result)
-                    if len(cells) % 50 == 0:
-                        print(f"  {len(cells)} cells collected so far...")
-            except Exception as exc:
-                errors += 1
-                logger.warning(
-                    "Weather fetch failed for %s: %s", point["cell_id"], exc
-                )
+    for i, point in enumerate(points, start=1):
+        try:
+            result = _fetch_weather(point)
+            if result is None:
+                elev_dropped += 1
+            else:
+                cells.append(result)
+                if len(cells) % 25 == 0:
+                    print(f"  {i}/{total} processed, {len(cells)} cells collected...")
+        except RuntimeError as exc:
+            if "daily" in str(exc).lower() or "limit exceeded" in str(exc).lower():
+                raise  # abort immediately — no point retrying remaining points
+            errors += 1
+            logger.warning("Weather fetch failed for %s: %s", point["cell_id"], exc)
+        except Exception as exc:
+            errors += 1
+            logger.warning("Weather fetch failed for %s: %s", point["cell_id"], exc)
+        time.sleep(WEATHER_REQUEST_INTERVAL)
 
     print(f"Stage 3: {len(cells)} cells with weather, "
           f"{elev_dropped} outside elevation band, {errors} errors")

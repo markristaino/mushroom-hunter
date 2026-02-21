@@ -4,5 +4,11 @@
     "output_path": "data/processed/habitat_cells.json",
     "rows_written": 21,
     "last_ingested": "2026-02-21T01:57:43.658195+00:00"
+  },
+  "forest_habitat_discovery": {
+    "source_id": "forest_habitat_discovery",
+    "output_path": "data/processed/habitat_cells.json",
+    "rows_written": 100,
+    "last_ingested": "2026-02-21T17:48:07.660447+00:00"
   }
 }

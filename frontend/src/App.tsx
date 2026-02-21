@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  CircleMarker,
   MapContainer,
   Popup,
+  Rectangle,
   TileLayer,
 } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -67,7 +67,7 @@ function App() {
       setError('')
       try {
         const response = await fetch(
-          `${API_BASE}/api/nowcast?species_id=${encodeURIComponent(activeSpecies)}`,
+          `${API_BASE}/api/nowcast?species_id=${encodeURIComponent(activeSpecies)}&min_score=0.8`,
         )
         if (!response.ok) throw new Error('Failed to load nowcast data')
         const payload: NowcastResponse = await response.json()
@@ -86,18 +86,24 @@ function App() {
     fetchNowcast(selectedSpecies)
   }, [fetchNowcast, selectedSpecies])
 
-  const colorScale = useCallback((score: number) => {
-    if (score >= 0.75) return '#4ade80'
-    if (score >= 0.5) return '#facc15'
-    if (score >= 0.25) return '#fb923c'
-    return '#f87171'
-  }, [])
+  // Grid cell half-size in degrees (matches pipeline GRID_STEP / 2)
+  const HALF_STEP = 0.025
+
+  const cellBounds = useCallback(
+    (lat: number, lng: number): [[number, number], [number, number]] => [
+      [lat - HALF_STEP, lng - HALF_STEP],
+      [lat + HALF_STEP, lng + HALF_STEP],
+    ],
+    [],
+  )
+
+  // Opacity scales with score (0.8 → 0.4 opacity, 1.0 → 0.85 opacity)
+  const patchOpacity = useCallback((score: number) => 0.4 + (score - 0.8) * 2.25, [])
 
   const summary = useMemo(() => {
     const total = cells.length
-    const high = cells.filter((cell) => cell.score >= 0.75).length
-    const medium = cells.filter((cell) => cell.score >= 0.5 && cell.score < 0.75).length
-    return { total, high, medium }
+    const excellent = cells.filter((cell) => cell.score >= 0.95).length
+    return { total, excellent }
   }, [cells])
 
   return (
@@ -126,41 +132,26 @@ function App() {
           <p className="status-value">{asOf ? new Date(asOf).toLocaleString() : '—'}</p>
           <div className="status-metrics">
             <div>
-              <span className="metric-value">{summary.high}</span>
-              <span className="metric-label">high confidence</span>
-            </div>
-            <div>
-              <span className="metric-value">{summary.medium}</span>
-              <span className="metric-label">moderate</span>
+              <span className="metric-value">{summary.excellent}</span>
+              <span className="metric-label">excellent spots</span>
             </div>
             <div>
               <span className="metric-value">{summary.total}</span>
-              <span className="metric-label">cells</span>
+              <span className="metric-label">favorable patches</span>
             </div>
           </div>
         </div>
         {loading && <p className="hint">Loading nowcast data…</p>}
         {error && <p className="error">{error}</p>}
         <section className="legend">
-          <p>Score legend</p>
+          <p>Map key</p>
           <ul>
             <li>
-              <span className="swatch" style={{ backgroundColor: '#4ade80' }} />
-              &ge; 0.75 (high)
-            </li>
-            <li>
-              <span className="swatch" style={{ backgroundColor: '#facc15' }} />
-              0.50 – 0.74
-            </li>
-            <li>
-              <span className="swatch" style={{ backgroundColor: '#fb923c' }} />
-              0.25 – 0.49
-            </li>
-            <li>
-              <span className="swatch" style={{ backgroundColor: '#f87171' }} />
-              &lt; 0.25
+              <span className="swatch" style={{ backgroundColor: '#4ade80', opacity: 0.85 }} />
+              Favorable conditions (score &ge; 0.8)
             </li>
           </ul>
+          <p className="hint">Brighter patches = closer to ideal conditions. No patches = not in season or conditions unmet.</p>
         </section>
       </aside>
       <main className="map-wrapper">
@@ -172,11 +163,10 @@ function App() {
         >
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
           {cells.map((cell) => (
-            <CircleMarker
+            <Rectangle
               key={cell.cell_id}
-              center={[cell.latitude, cell.longitude]}
-              radius={8 + cell.score * 6}
-              pathOptions={{ color: colorScale(cell.score), weight: 1, fillOpacity: 0.8 }}
+              bounds={cellBounds(cell.latitude, cell.longitude)}
+              pathOptions={{ color: '#16a34a', weight: 1.5, fillColor: '#4ade80', fillOpacity: patchOpacity(cell.score) }}
             >
               <Popup>
                 <strong>{cell.cell_id}</strong>
@@ -189,7 +179,7 @@ function App() {
                 ))}
                 <br />Last observation: {new Date(cell.last_observation).toLocaleString()}
               </Popup>
-            </CircleMarker>
+            </Rectangle>
           ))}
         </MapContainer>
       </main>
