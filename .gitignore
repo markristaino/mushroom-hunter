@@ -4,3 +4,8 @@ __pycache__/
 .venv/
 .env
 .DS_Store
+
+# Generated pipeline outputs — too large / reproducible
+data/processed/*.parquet
+data/raw/
+data/staging/
