@@ -100,7 +100,7 @@ function App() {
       setError('')
       const params = new URLSearchParams({
         species_id: activeSpecies,
-        min_score: '0.3',
+        min_score: '0.8',
         min_lat: viewport.getSouth().toFixed(6),
         max_lat: viewport.getNorth().toFixed(6),
         min_lon: viewport.getWest().toFixed(6),
@@ -152,9 +152,9 @@ function App() {
     [],
   )
 
-  // Opacity scales with score: 0.3 → 0.25, 1.0 → 0.85
+  // Opacity scales with score: 0.8 → 0.4, 1.0 → 0.85
   const patchOpacity = useCallback(
-    (score: number) => 0.25 + ((score - 0.3) / 0.7) * 0.6,
+    (score: number) => 0.4 + ((score - 0.8) / 0.2) * 0.45,
     [],
   )
 
@@ -210,7 +210,7 @@ function App() {
           <ul>
             <li>
               <span className="swatch" style={{ backgroundColor: '#4ade80', opacity: 0.85 }} />
-              Favorable conditions (score &ge; 0.3)
+              Favorable conditions (score &ge; 0.8)
             </li>
           </ul>
           <p className="hint">Brighter patches = closer to ideal. Pan or zoom to load cells for the current view.</p>
