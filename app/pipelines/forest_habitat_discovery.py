@@ -267,7 +267,7 @@ def _fetch_nf_polygons() -> List[Tuple[str, object]]:
     features: List[Tuple[str, object]] = []
     offset = 0
     page_size = 100
-    print("Stage 2: fetching National Forest boundaries from ESRI Living Atlas...")
+    print("Stage 2: fetching National Forest boundaries from ESRI Living Atlas...", flush=True)
 
     while True:
         params = {
@@ -307,13 +307,13 @@ def _fetch_nf_polygons() -> List[Tuple[str, object]]:
                 logger.warning("Could not parse geometry for '%s': %s", name, exc)
 
         print(f"  fetched {len(page_features)} NF polygons at offset={offset} "
-              f"(total so far: {len(features)})")
+              f"(total so far: {len(features)})", flush=True)
 
         if len(page_features) < page_size:
             break  # last page
         offset += page_size
 
-    print(f"Stage 2: loaded {len(features)} National Forest polygon(s)")
+    print(f"Stage 2: loaded {len(features)} National Forest polygon(s)", flush=True)
     return features
 
 
@@ -341,7 +341,7 @@ def _filter_by_national_forest(
                 surviving.append(point)
                 break  # assign to first matching forest only
 
-    print(f"Stage 2: {len(surviving)} points inside National Forest boundaries")
+    print(f"Stage 2: {len(surviving)} points inside National Forest boundaries", flush=True)
     return surviving
 
 
@@ -422,17 +422,22 @@ def _fetch_all_weather(points: List[dict]) -> List[HabitatCell]:
     errors = 0
     total = len(points)
     print(f"Stage 3: fetching weather for {total} points "
-          f"(sequential, {WEATHER_REQUEST_INTERVAL}s interval)...")
+          f"(sequential, {WEATHER_REQUEST_INTERVAL}s interval)...", flush=True)
 
     for i, point in enumerate(points, start=1):
+        logger.info("Fetching %d/%d: %s", i, total, point["cell_id"])
         try:
             result = _fetch_weather(point)
             if result is None:
                 elev_dropped += 1
+                logger.info("  -> elevation out of range, dropped")
             else:
                 cells.append(result)
-                if len(cells) % 25 == 0:
-                    print(f"  {i}/{total} processed, {len(cells)} cells collected...")
+                logger.info("  -> OK (soil_temp=%.1f, precip_7d=%.1f)",
+                            result.soil_temperature_c, result.precipitation_mm_last_7d)
+            if i % 50 == 0:
+                print(f"  {i}/{total} processed | {len(cells)} collected, "
+                      f"{elev_dropped} elev-dropped, {errors} errors", flush=True)
         except RuntimeError as exc:
             if "daily" in str(exc).lower() or "limit exceeded" in str(exc).lower():
                 raise  # abort immediately — no point retrying remaining points
@@ -444,7 +449,7 @@ def _fetch_all_weather(points: List[dict]) -> List[HabitatCell]:
         time.sleep(WEATHER_REQUEST_INTERVAL)
 
     print(f"Stage 3: {len(cells)} cells with weather, "
-          f"{elev_dropped} outside elevation band, {errors} errors")
+          f"{elev_dropped} outside elevation band, {errors} errors", flush=True)
     return cells
 
 
@@ -490,7 +495,7 @@ def _score_and_select(
 
     print(f"Stage 4: selected {len(output)} cells "
           f"(top-{TOP_N_PER_SPECIES}/species + {len(high_score_ids)} "
-          f"high-score ≥{HIGH_SCORE_THRESHOLD})")
+          f"high-score ≥{HIGH_SCORE_THRESHOLD})", flush=True)
     return output
 
 
@@ -507,9 +512,9 @@ def run() -> IngestionResult:
     profiles = catalog.species
 
     # Stage 1 — candidate grid
-    print("Stage 1: generating candidate grid...")
+    print("Stage 1: generating candidate grid...", flush=True)
     candidates = _generate_candidates()
-    print(f"Stage 1: {len(candidates)} candidate points")
+    print(f"Stage 1: {len(candidates)} candidate points", flush=True)
 
     # Stage 2 — NF boundary filter
     nf_polygons = _fetch_nf_polygons()
@@ -542,10 +547,10 @@ def run() -> IngestionResult:
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-    print("=== Forest Habitat Discovery Pipeline ===")
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(asctime)s %(message)s", datefmt="%H:%M:%S")
+    print("=== Forest Habitat Discovery Pipeline ===", flush=True)
     result = run()
-    print(f"\nWrote {result.rows_written} cells to {result.output_path}")
+    print(f"\nWrote {result.rows_written} cells to {result.output_path}", flush=True)
 
 
 if __name__ == "__main__":

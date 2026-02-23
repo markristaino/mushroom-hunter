@@ -8,7 +8,7 @@
   "forest_habitat_discovery": {
     "source_id": "forest_habitat_discovery",
     "output_path": "data/processed/habitat_cells.json",
-    "rows_written": 100,
-    "last_ingested": "2026-02-21T17:48:07.660447+00:00"
+    "rows_written": 497,
+    "last_ingested": "2026-02-22T19:28:05.939085+00:00"
   }
 }

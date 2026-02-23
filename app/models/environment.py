@@ -16,6 +16,8 @@ class HabitatCell(BaseModel):
     precipitation_mm_last_7d: float
     soil_moisture_index: Optional[float] = Field(default=None)
     canopy_density_pct: Optional[float] = Field(default=None)
+    canopy_pct_nlcd: Optional[int] = None
+    weather_anchor_id: Optional[str] = None
     last_observation: datetime
 
 

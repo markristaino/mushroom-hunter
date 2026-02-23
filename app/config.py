@@ -50,6 +50,14 @@ class Settings(BaseSettings):
     def seed_data_dir(self) -> Path:
         return self.data_dir / "seeds"
 
+    @property
+    def nlcd_canopy_path(self) -> Path:
+        return self.data_dir / "raw" / "nlcd_canopy_pnw.tif"
+
+    @property
+    def refined_grid_path(self) -> Path:
+        return self.data_dir / "processed" / "habitat_cells_300m.parquet"
+
 
 @lru_cache(1)
 def get_settings() -> Settings:
